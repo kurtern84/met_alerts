@@ -78,6 +78,7 @@ class MetAlertsSensor(SensorEntity):
         self._name = name
         self.coordinator = coordinator
         self._state = None
+        self._attributes = {}
 
     @property
     def name(self):
@@ -89,13 +90,28 @@ class MetAlertsSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        return self.coordinator.data
+        return self._attributes
 
     async def async_update(self):
         await self.coordinator.async_request_refresh()
         features = self.coordinator.data.get("features", [])
         if features:
             alert = features[0]
-            self._state = alert["properties"].get("title", "No Alert")
+            properties = alert["properties"]
+            self._state = properties.get("event", "No Alert")
+            self._attributes = {
+                "title": properties.get("title", ""),
+                "description": properties.get("description", ""),
+                "awareness_level": properties.get("awareness_level", ""),
+                "certainty": properties.get("certainty", ""),
+                "severity": properties.get("severity", ""),
+                "instruction": properties.get("instruction", ""),
+                "contact": properties.get("contact", ""),
+                "resources": properties.get("resources", []),
+                "area": properties.get("area", ""),
+                "event_awareness_name": properties.get("eventAwarenessName", ""),
+                "consequences": properties.get("consequences", ""),
+            }
         else:
             self._state = "No Alert"
+            self._attributes = {}

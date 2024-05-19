@@ -1,7 +1,10 @@
 # Met_Alerts
 A plugin for Home Assistant that displays extreme weather warning from MetAlert's API  (Yr.no)
 
+### Screenshot
 
+
+<img style="flat: left; width: 50%;" src="screenshot.png">
 
 ### Installation
 

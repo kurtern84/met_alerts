@@ -1,5 +1,5 @@
-# Met_Alerts
-A plugin for Home Assistant that displays extreme weather warning from MetAlert's API  (Yr.no)
+# MET Alerts Integration for Home Assistant
+Welcome to the MET Alerts integration for Home Assistant! This custom component provides real-time weather alerts from MET Norway directly into your Home Assistant setup. Follow the instructions below to install and configure this integration..
 
 ### Screenshot
 
@@ -8,32 +8,47 @@ A plugin for Home Assistant that displays extreme weather warning from MetAlert'
 
 ### Installation
 
-Step 1:  Create a new folder for your custom component in Home Assistant's custom_components folder.
+1. Download the Repository
+ - Download the latest version of this repository as a ZIP file.
+ - Extract the contents to your Home Assistant configuration directory.
+2. Copy Files
+ - Copy the met_alerts directory to your custom components directory:
 
 ```
-/Home-Assistant/_data/custom_components/met_alerts
-```
-
-Clone this repository:
+cp -r met_alerts /config/custom_components/
 
 ```
+3. Install Dependencies
+ - Ensure you have the required dependencies installed. If you are using Home Assistant Supervised or Home Assistant OS, dependencies are managed for you.
 
-git clone https://github.com/kurtern84/met_alerts.git
-```
+### Configuration
+1. Update configuration.yaml
+ - Add the following configuration to your configuration.yaml file:
 
-Edit configuration.yaml:
-
-```
+```yaml
 sensor:
   - platform: met_alerts
-    name: Met Alerts
-    latitude: 60.67659
-    longitude: 10.81997
-```
-
-Updated Lovelace configuration
+    name: MET Alerts
+    latitude: YOUR_LATITUDE
+    longitude: YOUR_LONGITUDE
 
 ```
+
+Replace YOUR_LATITUDE and YOUR_LONGITUDE with the coordinates for the location you want to monitor.
+
+2. Restart Home Assistant
+ - Restart Home Assistant to apply the changes:
+
+```
+sudo systemctl restart home-assistant.service
+```
+
+### Lovelace Dashboard Configuration
+To display the MET Alerts data in your Lovelace dashboard, you can use the following configuration:
+
+1. Entities Card for Basic Information
+ - Add an entities card to your Lovelace dashboard: 
+```yaml
 type: entities
 title: MET Alerts
 show_header_toggle: false
@@ -83,9 +98,10 @@ entities:
 
 ```
 
-Markdown cards for resources
+2. Markdown Card for Resources
+ - Add a markdown card to display resources:
 
-```
+```yaml
 type: markdown
 title: Resources
 content: >
@@ -98,3 +114,15 @@ content: >
   {% endif %}
 
 ```
+### Troubleshooting
+- JSON Decode Error
+  If you encounter a JSON decode error, ensure the URL and coordinates in your configuration are correct.
+- Custom Element Doesn't Exist
+  If you see "Custom element doesn't exist: attribute-table-card," make sure you have installed any necessary custom cards or use the recommended markdown configuration above.
+
+### Contribution
+We welcome contributions! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
+
+### License
+This project is licensed under the MIT License. See the LICENSE file for details.
+

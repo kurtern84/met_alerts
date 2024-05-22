@@ -115,10 +115,11 @@ content: >
 
 ```
 ### Troubleshooting
-- JSON Decode Error
-  If you encounter a JSON decode error, ensure the URL and coordinates in your configuration are correct.
-- Custom Element Doesn't Exist
-  If you see "Custom element doesn't exist: attribute-table-card," make sure you have installed any necessary custom cards or use the recommended markdown configuration above.
+JSON Decode Error
+ - If you encounter a JSON decode error, ensure the URL and coordinates in your configuration are correct.
+
+Custom Element Doesn't Exist
+ - If you see "Custom element doesn't exist: attribute-table-card," make sure you have installed any necessary custom cards or use the recommended markdown configuration above.
 
 ### Contribution
 We welcome contributions! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.

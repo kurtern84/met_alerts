@@ -26,7 +26,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     latitude = config[CONF_LATITUDE]
     longitude = config[CONF_LONGITUDE]
     coordinator = MetAlertsCoordinator(hass, latitude, longitude)
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.async_refresh()
     async_add_entities([MetAlertsSensor(name, coordinator)], True)
 
 class MetAlertsCoordinator(DataUpdateCoordinator):

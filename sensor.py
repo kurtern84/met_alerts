@@ -91,17 +91,31 @@ class MetAlertsSensor(SensorEntity):
     @property
     def extra_state_attributes(self):
         return self._attributes
-
+    
     async def async_update(self):
         await self.coordinator.async_request_refresh()
         features = self.coordinator.data.get("features", [])
+
         if features:
             alert = features[0]
             properties = alert["properties"]
 
             # Extract starttime and endtime from the title
             title, starttime, endtime = extract_times_from_title(properties.get("title", ""))
-            
+
+            # Extract the URL of the PNG image
+            resources = properties.get("resources", [])
+            map_url = None
+            for resource in resources:
+                if resource.get("mimeType") == "image/png":
+                    map_url = resource.get("uri")
+                    break
+
+            # Split awareness_level into numeric, color, and name
+            awareness_level = properties.get("awareness_level", "")
+            awareness_level_numeric, awareness_level_color, awareness_level_name = awareness_level.split("; ")
+
+            # Update attributes
             self._state = properties.get("event", "No Alert")
             self._attributes = {
                 "title": title,
@@ -109,6 +123,8 @@ class MetAlertsSensor(SensorEntity):
                 "endtime": endtime,
                 "description": properties.get("description", ""),
                 "awareness_level": properties.get("awareness_level", ""),
+                "awareness_level_numeric": awareness_level_numeric,
+                "awareness_level_color": awareness_level_color,
                 "certainty": properties.get("certainty", ""),
                 "severity": properties.get("severity", ""),
                 "instruction": properties.get("instruction", ""),
@@ -117,6 +133,7 @@ class MetAlertsSensor(SensorEntity):
                 "area": properties.get("area", ""),
                 "event_awareness_name": properties.get("eventAwarenessName", ""),
                 "consequences": properties.get("consequences", ""),
+                "map_url": map_url,
             }
         else:
             self._state = "No Alert"

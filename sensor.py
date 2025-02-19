@@ -98,9 +98,15 @@ class MetAlertsSensor(SensorEntity):
         if features:
             alert = features[0]
             properties = alert["properties"]
+
+            # Extract starttime and endtime from the title
+            title, starttime, endtime = extract_times_from_title(properties.get("title", ""))
+            
             self._state = properties.get("event", "No Alert")
             self._attributes = {
-                "title": properties.get("title", ""),
+                "title": title,
+                "starttime": starttime,
+                "endtime": endtime,
                 "description": properties.get("description", ""),
                 "awareness_level": properties.get("awareness_level", ""),
                 "certainty": properties.get("certainty", ""),
@@ -115,3 +121,17 @@ class MetAlertsSensor(SensorEntity):
         else:
             self._state = "No Alert"
             self._attributes = {}
+
+def extract_times_from_title(title):
+    # Use a regular expression to find the timestamps in the title
+    import re
+    timestamps = re.findall(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+\d{2}:\d{2}", title)
+
+    if len(timestamps) >= 2:
+        starttime = timestamps[0]
+        endtime = timestamps[1]
+        # Remove the timestamps from the title
+        title = title.replace(starttime, "").replace(endtime, "").strip(", ").strip()
+        return title, starttime, endtime
+    else:
+        return title, None, None

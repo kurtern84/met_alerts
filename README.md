@@ -46,7 +46,7 @@ sudo systemctl restart home-assistant.service
 ### Lovelace Dashboard Configuration
 To display the MET Alerts data in your Lovelace dashboard, you can use the following configuration:
 
-1. Entities Card for Basic Information
+#### 1. Entities Card for Basic Information
  - Add an entities card to your Lovelace dashboard: 
 ```yaml
 type: entities
@@ -61,12 +61,28 @@ entities:
     name: Title
   - type: attribute
     entity: sensor.met_alerts
+    attribute: starttime
+    name: Start time
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: endtime
+    name: End time
+  - type: attribute
+    entity: sensor.met_alerts
     attribute: description
     name: Description
   - type: attribute
     entity: sensor.met_alerts
     attribute: awareness_level
     name: Awareness Level
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: awareness_level_numeric
+    name: Awareness Level Numeric
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: awareness_level_color
+    name: Awareness Level Color
   - type: attribute
     entity: sensor.met_alerts
     attribute: certainty
@@ -95,10 +111,62 @@ entities:
     entity: sensor.met_alerts
     attribute: consequences
     name: Consequences
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: map_url
+    name: Map URL
 
 ```
 
-2. Markdown Card for Resources
+#### 2. More userfriendly time
+Add a template sensor helper.
+Use this as template to get a "prettier" time:
+```yaml
+{{ as_timestamp(strptime(state_attr("sensor.met_alerts", "starttime"), "%Y-%m-%dT%H:%M:%S%z")) | timestamp_custom("%A, %H:%M") }} - {{ as_timestamp(strptime(state_attr("sensor.met_alerts", "endtime"), "%Y-%m-%dT%H:%M:%S%z")) | timestamp_custom("%A, %H:%M") }}
+```
+This will result in a sensor like this:
+"Friday, 01:00 - Friday, 13:00"
+
+#### 3. Example of displaying a basic card and the map for it, only if there is an alert
+```yaml
+type: entities
+title: MET Alerts
+show_header_toggle: false
+entities:
+  - entity: sensor.met_alerts_time
+    name: Når
+    icon: mdi:clock-time-eight-outline
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: title
+    name: " "
+    icon: mdi:alert
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: awareness_level_color
+    name: Awareness Level Color
+    icon: mdi:alert
+  - type: attribute
+    entity: sensor.met_alerts
+    attribute: certainty
+    name: Certainty
+    icon: mdi:alert
+visibility:
+  - condition: state
+    entity: sensor.met_alerts
+    state_not: No Alert
+```
+ Map:
+ ```yaml
+type: markdown
+content: "![image]({{ state_attr('sensor.met_alerts', 'map_url') }})"
+visibility:
+  - condition: state
+    entity: sensor.met_alerts
+    state_not: No Alert
+```
+
+#### 4. Markdown Card for Resources
  - Add a markdown card to display resources:
 
 ```yaml
@@ -115,10 +183,10 @@ content: >
 
 ```
 ### Troubleshooting
-JSON Decode Error
+#### JSON Decode Error
  - If you encounter a JSON decode error, ensure the URL and coordinates in your configuration are correct.
 
-Custom Element Doesn't Exist
+#### Custom Element Doesn't Exist
  - If you see "Custom element doesn't exist: attribute-table-card," make sure you have installed any necessary custom cards or use the recommended markdown configuration above.
 
 ### Contribution

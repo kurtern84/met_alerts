@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "met_alerts"
 DEFAULT_NAME = "Met Alerts"
-SCAN_INTERVAL = timedelta(minutes=10)
+SCAN_INTERVAL = timedelta(minutes=30)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,

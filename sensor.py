@@ -104,6 +104,9 @@ class MetAlertsSensor(SensorEntity):
         await self.coordinator.async_request_refresh()
         features = self.coordinator.data.get("features", [])
 
+        # Sort features by awareness_level
+        features.sort(key=lambda x: x["properties"]["awareness_level"], reverse=True)
+
         if len(features) > self.index:
             alert = features[self.index]
             properties = alert["properties"]

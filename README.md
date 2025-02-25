@@ -128,10 +128,10 @@ entities:
 type: markdown
 show_empty: false
 content: >
-  {% set weekdays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'] %} 
-  {% set start_time = state_attr('sensor.met_alerts', 'starttime') %} 
-  {% set end_time = state_attr('sensor.met_alerts', 'endtime') %} 
-  {% if start_time and end_time %}
+  {% set weekdays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag',
+  'Fredag', 'Lørdag'] %}  {% set start_time = state_attr('sensor.met_alerts_2',
+  'starttime') %}   {% set end_time = state_attr('sensor.met_alerts_2',
+  'endtime')%} {% if start_time and end_time %}
     {% set start_timestamp = as_timestamp(strptime(start_time, "%Y-%m-%dT%H:%M:%S%z")) %}
     {% set end_timestamp = as_timestamp(strptime(end_time, "%Y-%m-%dT%H:%M:%S%z")) %}
     {% set start_day_index = start_timestamp | timestamp_custom("%w") | int %}
@@ -143,18 +143,16 @@ content: >
     {% else %}
       {% set met_alerts_time = start_day + ' kl ' + (start_timestamp | timestamp_custom("%H:%M")) + ' til ' + end_day + ' kl ' + (end_timestamp | timestamp_custom("%H:%M")) %}
     {% endif %}
-    
     {% set time_diff = (as_timestamp(start_time) - as_timestamp(now())) / 3600 %}
-    {% if time_diff < 24 %}## <center><font color="{{ state_attr('sensor.met_alerts', 'awareness_level_color') }}"><ha-icon icon="mdi:alert"></ha-icon> Farevarsel - {{ state_attr('sensor.met_alerts', 'event_awareness_name') }} <ha-icon icon="mdi:alert"></ha-icon></font></center>
+    {% set time_diff_end = (as_timestamp(end_time) - as_timestamp(now())) / 3600 %}
+    {% if time_diff < 24 and time_diff_end > 0 %}## <center><font color="{{ state_attr('sensor.met_alerts_2', 'awareness_level_color') }}"><ha-icon icon="mdi:alert"></ha-icon> Farevarsel - {{ state_attr('sensor.met_alerts_2', 'event_awareness_name') }} <ha-icon icon="mdi:alert"></ha-icon></font></center>
     ### <center>{{ met_alerts_time }}
-    {{ state_attr('sensor.met_alerts', 'description') }}</center>
+    {{ state_attr('sensor.met_alerts_2', 'description') }}</center>
     
-    <i>{{ state_attr('sensor.met_alerts', 'instruction') }}</i>
+    <i>{{ state_attr('sensor.met_alerts_2', 'instruction') }}</i>
     
-    ![image]({{ state_attr('sensor.met_alerts', 'map_url') }})
+    ![image]({{ state_attr('sensor.met_alerts_2', 'map_url') }})
     {% endif %}
-  {% else %}
-    <!-- Empty content when condition is not met -->
   {% endif %}
 ```
 

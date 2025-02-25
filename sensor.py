@@ -27,7 +27,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     longitude = config[CONF_LONGITUDE]
     coordinator = MetAlertsCoordinator(hass, latitude, longitude)
     await coordinator.async_refresh()
-    async_add_entities([MetAlertsSensor(name, coordinator)], True)
+    entities = [
+        MetAlertsSensor(f"{name}", coordinator, 0),
+        MetAlertsSensor(f"{name}_2", coordinator, 1),
+        MetAlertsSensor(f"{name}_3", coordinator, 2),
+        MetAlertsSensor(f"{name}_4", coordinator, 3),
+    ]
+    async_add_entities(entities, True)    
 
 class MetAlertsCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, latitude, longitude):
@@ -44,6 +50,7 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from API."""
         url = f"https://api.met.no/weatherapi/metalerts/2.0/current.json?lat={self.latitude}&lon={self.longitude}"
+        #url = f"https://api.met.no/weatherapi/metalerts/2.0/example.json"
         try:
             async with aiohttp.ClientSession() as session:
                 with async_timeout.timeout(10):
@@ -74,11 +81,12 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error fetching data: {err}")
 
 class MetAlertsSensor(SensorEntity):
-    def __init__(self, name, coordinator):
+    def __init__(self, name, coordinator, index):
         self._name = name
         self.coordinator = coordinator
         self._state = None
         self._attributes = {}
+        self.index = index
 
     @property
     def name(self):
@@ -96,8 +104,8 @@ class MetAlertsSensor(SensorEntity):
         await self.coordinator.async_request_refresh()
         features = self.coordinator.data.get("features", [])
 
-        if features:
-            alert = features[0]
+        if len(features) > self.index:
+            alert = features[self.index]
             properties = alert["properties"]
 
             # Extract starttime and endtime from the title

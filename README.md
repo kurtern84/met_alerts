@@ -37,10 +37,11 @@ sensor:
     name: MET Alerts
     latitude: YOUR_LATITUDE
     longitude: YOUR_LONGITUDE
-
+    lang: no
 ```
 
 Replace YOUR_LATITUDE and YOUR_LONGITUDE with the coordinates for the location you want to monitor.
+Language is default to "no", but you can set it to "en" for english alerts.
 
 2. Restart Home Assistant to apply the changes.
 

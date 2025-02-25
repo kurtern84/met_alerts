@@ -13,19 +13,24 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "met_alerts"
 DEFAULT_NAME = "Met Alerts"
+DEFAULT_LANG = "no"  # Default value for lang
 SCAN_INTERVAL = timedelta(minutes=30)
+
+CONF_LANG = "lang"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Required(CONF_LATITUDE): cv.latitude,
     vol.Required(CONF_LONGITUDE): cv.longitude,
+    vol.Optional(CONF_LANG, default=DEFAULT_LANG): cv.string,  # Add lang config option
 })
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     name = config[CONF_NAME]
     latitude = config[CONF_LATITUDE]
     longitude = config[CONF_LONGITUDE]
-    coordinator = MetAlertsCoordinator(hass, latitude, longitude)
+    lang = config.get(CONF_LANG, DEFAULT_LANG)  # Get lang config option
+    coordinator = MetAlertsCoordinator(hass, latitude, longitude, lang)
     await coordinator.async_refresh()
     entities = [
         MetAlertsSensor(f"{name}", coordinator, 0),
@@ -36,7 +41,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities(entities, True)    
 
 class MetAlertsCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, latitude, longitude):
+    def __init__(self, hass, latitude, longitude, lang):
         """Initialize my coordinator."""
         super().__init__(
             hass,
@@ -46,11 +51,12 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
         )
         self.latitude = latitude
         self.longitude = longitude
+        self.lang = lang  # Store lang parameter
 
     async def _async_update_data(self):
         """Fetch data from API."""
-        url = f"https://api.met.no/weatherapi/metalerts/2.0/current.json?lat={self.latitude}&lon={self.longitude}"
-        #url = f"https://api.met.no/weatherapi/metalerts/2.0/example.json"
+        url = f"https://api.met.no/weatherapi/metalerts/2.0/current.json?lat={self.latitude}&lon={self.longitude}&lang={self.lang}"
+        #url = f"https://api.met.no/weatherapi/metalerts/2.0/example.json?lang={self.lang}"
         try:
             async with aiohttp.ClientSession() as session:
                 with async_timeout.timeout(10):

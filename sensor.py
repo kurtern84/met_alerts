@@ -13,8 +13,8 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "met_alerts"
 DEFAULT_NAME = "Met Alerts"
-DEFAULT_LANG = "no"  # Default value for lang
-SCAN_INTERVAL = timedelta(minutes=30)
+DEFAULT_LANG = "no"
+SCAN_INTERVAL = timedelta(minutes=60)
 
 CONF_LANG = "lang"
 
@@ -22,14 +22,14 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Required(CONF_LATITUDE): cv.latitude,
     vol.Required(CONF_LONGITUDE): cv.longitude,
-    vol.Optional(CONF_LANG, default=DEFAULT_LANG): cv.string,  # Add lang config option
+    vol.Optional(CONF_LANG, default=DEFAULT_LANG): cv.string,
 })
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     name = config[CONF_NAME]
     latitude = config[CONF_LATITUDE]
     longitude = config[CONF_LONGITUDE]
-    lang = config.get(CONF_LANG, DEFAULT_LANG)  # Get lang config option
+    lang = config.get(CONF_LANG, DEFAULT_LANG)
     coordinator = MetAlertsCoordinator(hass, latitude, longitude, lang)
     await coordinator.async_refresh()
     entities = [
@@ -38,11 +38,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         MetAlertsSensor(f"{name}_3", coordinator, 2),
         MetAlertsSensor(f"{name}_4", coordinator, 3),
     ]
-    async_add_entities(entities, True)    
+    async_add_entities(entities, True)
 
 class MetAlertsCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, latitude, longitude, lang):
-        """Initialize my coordinator."""
         super().__init__(
             hass,
             _LOGGER,
@@ -51,38 +50,22 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
         )
         self.latitude = latitude
         self.longitude = longitude
-        self.lang = lang  # Store lang parameter
+        self.lang = lang
 
     async def _async_update_data(self):
-        """Fetch data from API."""
-        url = f"https://api.met.no/weatherapi/metalerts/2.0/current.json?lat={self.latitude}&lon={self.longitude}&lang={self.lang}"
-        #url = f"https://api.met.no/weatherapi/metalerts/2.0/example.json?lang={self.lang}"
+        url = f"https://aa015h6buqvih86i1.api.met.no/weatherapi/metalerts/2.0/current.json?lat={self.latitude}&lon={self.longitude}&lang={self.lang}"
+        _LOGGER.debug(f"Request URL: {url}")
         try:
             async with aiohttp.ClientSession() as session:
                 with async_timeout.timeout(10):
-                    async with session.get(url) as response:
+                    async with session.get(url, headers={"User-Agent": "HomeAssistant/2024.3.0 (kurtern84@gmail.com)"}) as response:
                         if response.status != 200:
                             _LOGGER.error(f"Error fetching data: {response.status}")
                             raise UpdateFailed(f"Error fetching data: {response.status}")
-
-                        content_type = response.headers.get('Content-Type', '')
-                        if 'application/json' not in content_type:
-                            _LOGGER.error(f"Unexpected Content-Type: {content_type}")
-                            raise UpdateFailed(f"Unexpected Content-Type: {content_type}")
-
-                        response_text = await response.text()
-                        if not response_text:
-                            _LOGGER.error("Received empty response")
-                            raise UpdateFailed("Received empty response")
-
-                        try:
-                            json_data = await response.json()
-                            _LOGGER.debug(f"Response JSON: {json_data}")
-                            return json_data
-                        except aiohttp.ClientResponseError as err:
-                            _LOGGER.error("JSON decode error: Response content was empty or invalid")
-                            _LOGGER.debug(f"Response content: {response_text}")
-                            raise UpdateFailed(f"JSON decode error: {err}")
+                        
+                        json_data = await response.json()
+                        _LOGGER.debug(f"Response JSON: {json_data}")
+                        return json_data
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error fetching data: {err}")
 
@@ -108,45 +91,35 @@ class MetAlertsSensor(SensorEntity):
     
     async def async_update(self):
         await self.coordinator.async_request_refresh()
-        features = self.coordinator.data.get("features", [])
+        data = self.coordinator.data
 
-        # Sort features by awareness_level
-        features.sort(key=lambda x: x["properties"]["awareness_level"], reverse=True)
+        if not data or not data.get("features"):
+            _LOGGER.warning("No alerts returned from MET API")
+            self._state = "No Alert"
+            self._attributes = {}
+            return
+        
+        features = data.get("features", [])
+        features.sort(key=lambda x: x["properties"].get("awareness_level", "0;grey;Unknown"))
 
         if len(features) > self.index:
             alert = features[self.index]
             properties = alert["properties"]
 
-            # Extract starttime and endtime from the title
-            title, starttime, endtime = extract_times_from_title(properties.get("title", ""))
-
-            # Extract the URL of the PNG image
+            # Finn kart-URL (hvis den finnes)
             resources = properties.get("resources", [])
-            map_url = None
-            for resource in resources:
-                if resource.get("mimeType") == "image/png":
-                    map_url = resource.get("uri")
-                    break
+            map_url = next((res.get("uri") for res in resources if res.get("mimeType") == "image/png"), None)
 
-            # Split awareness_level into numeric, color, and name
-            awareness_level = properties.get("awareness_level", "")
-            awareness_level_numeric, awareness_level_color, awareness_level_name = awareness_level.split("; ")
-
-            # Update attributes
             self._state = properties.get("event", "No Alert")
             self._attributes = {
-                "title": title,
-                "starttime": starttime,
-                "endtime": endtime,
+                "title": properties.get("title", ""),
                 "description": properties.get("description", ""),
                 "awareness_level": properties.get("awareness_level", ""),
-                "awareness_level_numeric": awareness_level_numeric,
-                "awareness_level_color": awareness_level_color,
-                "certainty": properties.get("certainty", ""),
                 "severity": properties.get("severity", ""),
+                "certainty": properties.get("certainty", ""),
                 "instruction": properties.get("instruction", ""),
                 "contact": properties.get("contact", ""),
-                "resources": properties.get("resources", []),
+                "resources": resources,
                 "area": properties.get("area", ""),
                 "event_awareness_name": properties.get("eventAwarenessName", ""),
                 "consequences": properties.get("consequences", ""),
@@ -155,17 +128,3 @@ class MetAlertsSensor(SensorEntity):
         else:
             self._state = "No Alert"
             self._attributes = {}
-
-def extract_times_from_title(title):
-    # Use a regular expression to find the timestamps in the title
-    import re
-    timestamps = re.findall(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+\d{2}:\d{2}", title)
-
-    if len(timestamps) >= 2:
-        starttime = timestamps[0]
-        endtime = timestamps[1]
-        # Remove the timestamps from the title
-        title = title.replace(starttime, "").replace(endtime, "").strip(", ").strip()
-        return title, starttime, endtime
-    else:
-        return title, None, None

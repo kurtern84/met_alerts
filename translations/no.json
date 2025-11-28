@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sett opp Met Alerts",
+        "description": "Konfigurer Met Alerts for å motta værvarsler fra MET Norge",
+        "data": {
+          "name": "Navn",
+          "latitude": "Breddegrad",
+          "longitude": "Lengdegrad",
+          "lang": "Språk"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kunne ikke koble til MET Norge API. Vennligst sjekk koordinatene dine og prøv igjen.",
+      "unknown": "Uventet feil oppstod"
+    },
+    "abort": {
+      "already_configured": "Denne lokasjonen er allerede konfigurert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Oppdater Met Alerts-konfigurasjon",
+        "description": "Oppdater konfigurasjonen for denne Met Alerts-instansen",
+        "data": {
+          "name": "Navn",
+          "latitude": "Breddegrad",
+          "longitude": "Lengdegrad",
+          "lang": "Språk"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kunne ikke koble til MET Norge API. Vennligst sjekk koordinatene dine og prøv igjen.",
+      "unknown": "Uventet feil oppstod"
+    }
+  }
+}

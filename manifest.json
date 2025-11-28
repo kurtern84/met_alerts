@@ -1,9 +1,11 @@
 {
   "domain": "met_alerts",
   "name": "Met Alerts",
-  "version": "2.0.0",
-  "documentation": "https://www.home-assistant.io/integrations/sensor/",
+  "version": "3.0.0",
+  "documentation": "https://github.com/kurtern84/met_alerts",
   "requirements": ["aiohttp"],
   "dependencies": [],
-  "codeowners": ["@kurtern84"]
+  "codeowners": ["@kurtern84", "@jm-cook"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
 }

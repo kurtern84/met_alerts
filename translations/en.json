@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Met Alerts",
+        "description": "Configure Met Alerts to receive weather alerts from MET Norway",
+        "data": {
+          "name": "Name",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "lang": "Language"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to MET Norway API. Please check your coordinates and try again.",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This location is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update Met Alerts configuration",
+        "description": "Update the configuration for this Met Alerts instance",
+        "data": {
+          "name": "Name",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "lang": "Language"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to MET Norway API. Please check your coordinates and try again.",
+      "unknown": "Unexpected error occurred"
+    }
+  }
+}

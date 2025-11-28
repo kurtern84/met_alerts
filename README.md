@@ -14,10 +14,10 @@ Welcome to the MET Alerts integration for Home Assistant! This custom component 
 ## Screenshots
 
 ### Basic/small
-<img style="flat: left; width: 50%;" src="screenshot.png">
+<img style="flat: left; width: 50%;" src="screenshots/screenshot.png">
 
 ### Extensive/large
-<img style="flat: left; width: 50%;" src="screenshot2.png">
+<img style="flat: left; width: 50%;" src="screenshots/screenshot2.png">
 
 ## Installation
 
@@ -53,6 +53,7 @@ Welcome to the MET Alerts integration for Home Assistant! This custom component 
 4. Click on the **Met Alerts** integration when it appears
 
 ![Add Integration](screenshots/add-integration.png)
+
 *Screenshot: Adding Met Alerts through the integrations page*
 
 #### Step 2: Configure Your Location
@@ -67,6 +68,7 @@ Enter your configuration details:
   - `en` - English
 
 ![Configuration Form](screenshots/config-form.png)
+
 *Screenshot: Configuration form for Met Alerts*
 
 **💡 Tip**: You can set up multiple instances for different locations (e.g., one for home, one for your cottage).
@@ -78,7 +80,9 @@ Click **Submit** to complete the setup. The integration will:
 - Create 4 sensors for tracking up to 4 simultaneous alerts
 - Start monitoring for weather alerts every 30 minutes
 
+
 ![Integration Added](screenshots/integration-added.png)
+
 *Screenshot: Successfully added Met Alerts integration*
 
 #### Reconfiguring Settings
@@ -87,11 +91,12 @@ To update your configuration later:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find the **Met Alerts** integration
-3. Click the three dots (⋮) on the integration card
-4. Select **Configure**
-5. Update your settings and click **Submit**
+3. Click the ⚙️ **Configure** button
+4. Update your settings and click **Submit**
+
 
 ![Configure Options](screenshots/configure-options.png)
+
 *Screenshot: Accessing configuration options*
 
 The integration will automatically reload with your new settings.
@@ -434,7 +439,7 @@ To change your configuration:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find the "Met Alerts" integration
-3. Click the three dots (⋮) → **Configure**
+3. Click the ⚙️ **Configure** button
 4. Update your settings:
    - Change the name
    - Adjust coordinates
@@ -449,7 +454,7 @@ To completely remove Met Alerts:
 
 1. Go to **Settings** → **Devices & Services**  
 2. Find the "Met Alerts" integration
-3. Click the three dots (⋮) → **Delete**
+3. Click **Delete**
 4. Confirm the deletion
 
 All sensors and configuration will be removed.

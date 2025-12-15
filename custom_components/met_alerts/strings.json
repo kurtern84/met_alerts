@@ -29,7 +29,8 @@
           "name": "Name",
           "latitude": "Latitude",
           "longitude": "Longitude",
-          "lang": "Language"
+          "lang": "Language",
+          "sensor_mode": "Sensor Mode"
         }
       }
     },

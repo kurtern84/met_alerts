@@ -1,1 +1,11 @@
-# ...existing code from met_alerts/manifest.json...
+{
+  "domain": "met_alerts",
+  "name": "Met Alerts",
+  "version": "3.0.0",
+  "documentation": "https://github.com/kurtern84/met_alerts",
+  "requirements": ["aiohttp"],
+  "dependencies": [],
+  "codeowners": ["@kurtern84", "@jm-cook"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

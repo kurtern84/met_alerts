@@ -121,19 +121,32 @@ class MetAlertsOptionsFlow(config_entries.OptionsFlow):
                     user_input.get(CONF_LANG, DEFAULT_LANG),
                 )
 
-                return self.async_create_entry(title="", data=user_input)
+                # Split config and options
+                config_data = dict(user_input)
+                options_data = {}
+                if CONF_SENSOR_MODE in config_data:
+                    options_data[CONF_SENSOR_MODE] = config_data.pop(CONF_SENSOR_MODE)
+                return self.async_create_entry(title="", data=config_data, options=options_data)
             except ValueError as err:
-                _LOGGER.error("Validation failed: %s", err)
-                errors["base"] = "cannot_connect"
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
+                    # Split config and options
+                    config_data = dict(user_input)
+                    options_data = {}
+                    # Remove sensor mode from config, store in options
+                    if CONF_SENSOR_MODE in config_data:
+                        options_data[CONF_SENSOR_MODE] = config_data.pop(CONF_SENSOR_MODE)
+                    return self.async_create_entry(
+                        title=user_input.get(CONF_NAME, DEFAULT_NAME),
+                        data=config_data,
+                        options=options_data,
+                    )
                 errors["base"] = "unknown"
 
-        # Get current values from config entry
+        # Get current values from config entry and options
         current_name = self.config_entry.data.get(CONF_NAME, DEFAULT_NAME)
         current_lat = self.config_entry.data.get(CONF_LATITUDE, self.hass.config.latitude)
         current_lon = self.config_entry.data.get(CONF_LONGITUDE, self.hass.config.longitude)
         current_lang = self.config_entry.data.get(CONF_LANG, DEFAULT_LANG)
+        current_mode = self.config_entry.options.get(CONF_SENSOR_MODE, SENSOR_MODE_LEGACY)
 
         data_schema = vol.Schema(
             {
@@ -141,10 +154,12 @@ class MetAlertsOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_LATITUDE, default=current_lat): cv.latitude,
                 vol.Required(CONF_LONGITUDE, default=current_lon): cv.longitude,
                 vol.Optional(CONF_LANG, default=current_lang): vol.In(["no", "en"]),
+                vol.Optional(CONF_SENSOR_MODE, default=current_mode): vol.In([SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY]),
             }
         )
 
         return self.async_show_form(
+                    vol.Optional(CONF_SENSOR_MODE, default=SENSOR_MODE_LEGACY): vol.In([SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY]),
             step_id="init",
             data_schema=data_schema,
             errors=errors,

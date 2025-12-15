@@ -2,13 +2,15 @@
 
 Welcome to the MET Alerts integration for Home Assistant! This custom component provides real-time weather alerts from MET Norway directly into your Home Assistant setup.
 
+
 ## Features
 
 - 🎨 **UI Configuration** - Easy setup through Home Assistant UI (no YAML required!)
 - 🔄 **Real-time Updates** - Fetches alerts every 30 minutes
 - 🌍 **Multiple Languages** - Support for Norwegian and English
 - 📍 **Location-based** - Configure alerts for any coordinates
-- 🚨 **Multiple Alerts** - Track up to 4 simultaneous alerts
+- 🚨 **Sensor Modes** - Choose between legacy (4 sensors) or new array mode (1 sensor with all alerts as attribute)
+- 🖼️ **Automatic Alert Icons** - Sensors display the correct warning icon for each alert (offline, embedded)
 - 🗺️ **Map URLs** - Direct links to alert maps
 
 ## Screenshots
@@ -121,39 +123,53 @@ After adding this, restart Home Assistant.
 
 </details>
 
+
 ## Entities Created
 
-The integration creates 4 sensor entities for each configured location:
+Depending on your configuration, the integration creates either:
 
-| Entity ID | Description | Priority |
-|-----------|-------------|----------|
-| `sensor.met_alerts` | Highest priority alert | 1st (Most severe) |
-| `sensor.met_alerts_2` | Second highest priority | 2nd |
-| `sensor.met_alerts_3` | Third highest priority | 3rd |
-| `sensor.met_alerts_4` | Fourth highest priority | 4th (Least severe) |
+- **Legacy Mode** (default):
+  - 4 sensor entities for each configured location:
+    | Entity ID | Description | Priority |
+    |-----------|-------------|----------|
+    | `sensor.met_alerts` | Highest priority alert | 1st (Most severe) |
+    | `sensor.met_alerts_2` | Second highest priority | 2nd |
+    | `sensor.met_alerts_3` | Third highest priority | 3rd |
+    | `sensor.met_alerts_4` | Fourth highest priority | 4th (Least severe) |
+  - Each sensor shows the event type and attributes for a single alert (sorted by severity).
 
-**Note**: Alerts are automatically sorted by awareness level (severity), with the most severe appearing in `sensor.met_alerts`.
+- **Array Mode**:
+  - 1 sensor entity per location:
+    | Entity ID | Description |
+    |-----------|-------------|
+    | `sensor.met_alerts` | Number of active alerts (state), all alerts as attribute array |
+  - The `alerts` attribute contains a list of all active alerts, each with full details.
+
+**Note**: Alerts are always sorted by awareness level (severity), with the most severe first.
+
 
 ### Sensor States
 
-The sensor state shows the event type, or "No Alert" if no alerts are active. Common event types:
-- `stormSurge` - Storm surge / high water levels
-- `wind` - Strong wind
-- `snow` - Heavy snow
-- `ice` - Ice conditions
-- `forestFire` - Forest fire danger
-- `avalanches` - Avalanche danger
-- `rain` - Heavy rainfall
-- `flooding` - Flood warnings
-- `polarLow` - Polar low pressure system
-- `rain-flood` - Rain-induced flooding
+- **Legacy mode**: The sensor state shows the event type, or "No Alert" if no alerts are active. Common event types:
+  - `stormSurge`, `wind`, `snow`, `ice`, `forestFire`, `avalanches`, `rain`, `flooding`, `polarLow`, `rain-flood`, etc.
+- **Array mode**: The sensor state is the number of active alerts (or "No Alert" if none).
+
 
 ### Sensor Attributes
 
-Each sensor provides detailed information through attributes:
-### Sensor Attributes
+- **Legacy mode**: Each sensor provides detailed information through attributes:
+  - `entity_picture`: The correct warning icon for the alert (SVG, offline, with attribution)
+  - `attribution`: License and credit for the icon set
+### Array Mode Attributes
 
-Each sensor provides detailed information through attributes:
+In array mode, the single sensor has an `alerts` attribute, which is a list of all active alerts. Each alert in the array contains the same fields as above (title, starttime, endtime, etc.).
+## Icon Attribution
+
+Alert icons are from the [NRK/yr.no warning icon set](https://github.com/nrkno/yr-warning-icons), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/):
+
+> "Warning icons by NRK/yr.no, CC BY 4.0, https://github.com/nrkno/yr-warning-icons"
+
+The icons are embedded as base64-encoded SVGs for offline use. See LICENSE_yr_icons.txt for full license text and attribution.
 
 | Attribute | Description | Example |
 |-----------|-------------|---------|

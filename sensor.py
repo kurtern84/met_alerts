@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import DOMAIN, DEFAULT_NAME, DEFAULT_LANG, CONF_LANG
+from .const import DOMAIN, DEFAULT_NAME, DEFAULT_LANG, CONF_LANG, CONF_SENSOR_MODE, SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -44,17 +45,78 @@ async def async_setup_entry(
     latitude = entry.data.get(CONF_LATITUDE)
     longitude = entry.data.get(CONF_LONGITUDE)
     lang = entry.data.get(CONF_LANG, DEFAULT_LANG)
-    
+    # Read sensor mode from options, fallback to legacy
+    sensor_mode = entry.options.get(CONF_SENSOR_MODE, SENSOR_MODE_LEGACY) if hasattr(entry, 'options') else SENSOR_MODE_LEGACY
+
     coordinator = MetAlertsCoordinator(hass, latitude, longitude, lang)
     await coordinator.async_config_entry_first_refresh()
-    
-    entities = [
-        MetAlertsSensor(coordinator, f"{name}", 0, entry.entry_id),
-        MetAlertsSensor(coordinator, f"{name}_2", 1, entry.entry_id),
-        MetAlertsSensor(coordinator, f"{name}_3", 2, entry.entry_id),
-        MetAlertsSensor(coordinator, f"{name}_4", 3, entry.entry_id),
-    ]
+
+    entities = []
+    if sensor_mode == SENSOR_MODE_ARRAY:
+        entities.append(MetAlertsArraySensor(coordinator, name, entry.entry_id))
+    else:
+        # Default: legacy mode (4 sensors)
+        entities = [
+            MetAlertsSensor(coordinator, f"{name}", 0, entry.entry_id),
+            MetAlertsSensor(coordinator, f"{name}_2", 1, entry.entry_id),
+            MetAlertsSensor(coordinator, f"{name}_3", 2, entry.entry_id),
+            MetAlertsSensor(coordinator, f"{name}_4", 3, entry.entry_id),
+        ]
     async_add_entities(entities)
+
+# New: Array mode sensor (single entity with all alerts as attribute)
+class MetAlertsArraySensor(CoordinatorEntity, SensorEntity):
+    """Single sensor with all alerts as attribute (array mode)."""
+
+    def __init__(self, coordinator: MetAlertsCoordinator, name: str, entry_id: str | None):
+        super().__init__(coordinator)
+        self._attr_name = name
+        self._entry_id = entry_id
+        self._attr_unique_id = f"{entry_id}_array" if entry_id else None
+        self._attr_has_entity_name = False
+
+    @property
+    def native_value(self):
+        """Return the state: number of active alerts, or 'No Alert'."""
+        if not self.coordinator.data:
+            return "No Alert"
+        features = self.coordinator.data.get("features", [])
+        return len(features) if features else "No Alert"
+
+    @property
+    def extra_state_attributes(self):
+        """Return all alerts as an array attribute."""
+        if not self.coordinator.data:
+            return {"alerts": []}
+        features = self.coordinator.data.get("features", [])
+        alerts = []
+        for feature in features:
+            props = feature.get("properties", {})
+            title, starttime, endtime = extract_times_from_title(props.get("title", ""))
+            awareness_level = props.get("awareness_level", "")
+            try:
+                awareness_level_numeric, awareness_level_color, _ = awareness_level.split("; ")
+            except ValueError:
+                awareness_level_numeric = ""
+                awareness_level_color = ""
+            alerts.append({
+                "title": title,
+                "starttime": starttime,
+                "endtime": endtime,
+                "description": props.get("description", ""),
+                "awareness_level": awareness_level,
+                "awareness_level_numeric": awareness_level_numeric,
+                "awareness_level_color": awareness_level_color,
+                "certainty": props.get("certainty", ""),
+                "severity": props.get("severity", ""),
+                "instruction": props.get("instruction", ""),
+                "contact": props.get("contact", ""),
+                "resources": props.get("resources", []),
+                "area": props.get("area", ""),
+                "event_awareness_name": props.get("eventAwarenessName", ""),
+                "consequences": props.get("consequences", ""),
+            })
+        return {"alerts": alerts}
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -192,6 +254,55 @@ class MetAlertsSensor(CoordinatorEntity, SensorEntity):
             self.index,
         )
         return "No Alert"
+
+    @property
+    def entity_picture(self):
+        """Return the icon image for the alert (if any)."""
+        if not self.coordinator.data:
+            return None
+        features = self.coordinator.data.get("features", [])
+        sorted_features = sorted(
+            features,
+            key=lambda x: x["properties"]["awareness_level"],
+            reverse=True,
+        )
+        if len(sorted_features) > self.index:
+            properties = sorted_features[self.index]["properties"]
+            event = properties.get("event", "").lower().replace(" ", "-")
+            awareness_level = properties.get("awareness_level", "")
+            try:
+                _, color, _ = awareness_level.split("; ")
+            except ValueError:
+                color = ""
+            key = f"{event}-{color.lower()}" if color else event
+            return ICON_DATA_URLS.get(key)
+        return None
+
+    @property
+    def attribution(self):
+        return ICON_ATTRIBUTION
+    @property
+    def entity_picture(self):
+        """Return the icon for the most severe alert (if any)."""
+        if not self.coordinator.data:
+            return None
+        features = self.coordinator.data.get("features", [])
+        if not features:
+            return None
+        # Use the first alert (highest awareness_level)
+        props = features[0].get("properties", {})
+        event = props.get("event", "").lower().replace(" ", "-")
+        awareness_level = props.get("awareness_level", "")
+        try:
+            _, color, _ = awareness_level.split("; ")
+        except ValueError:
+            color = ""
+        key = f"{event}-{color.lower()}" if color else event
+        return ICON_DATA_URLS.get(key)
+
+    @property
+    def attribution(self):
+        return ICON_ATTRIBUTION
 
     @property
     def extra_state_attributes(self):

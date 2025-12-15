@@ -72,9 +72,21 @@ class MetAlertsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 self._abort_if_unique_id_configured()
 
+                # Split config data and options data
+                config_data = {
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_LATITUDE: user_input[CONF_LATITUDE],
+                    CONF_LONGITUDE: user_input[CONF_LONGITUDE],
+                    CONF_LANG: user_input.get(CONF_LANG, DEFAULT_LANG),
+                }
+                options_data = {}
+                if CONF_SENSOR_MODE in user_input:
+                    options_data[CONF_SENSOR_MODE] = user_input[CONF_SENSOR_MODE]
+
                 return self.async_create_entry(
                     title=user_input.get(CONF_NAME, DEFAULT_NAME),
-                    data=user_input,
+                    data=config_data,
+                    options=options_data,
                 )
             except ValueError as err:
                 _LOGGER.error("Validation failed: %s", err)
@@ -96,6 +108,7 @@ class MetAlertsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default=self.hass.config.longitude,
                 ): cv.longitude,
                 vol.Optional(CONF_LANG, default=DEFAULT_LANG): vol.In(["no", "en"]),
+                vol.Optional(CONF_SENSOR_MODE, default=SENSOR_MODE_LEGACY): vol.In([SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY]),
             }
         )
 

@@ -113,7 +113,18 @@ class MetAlertsArraySensor(CoordinatorEntity, SensorEntity):
             except ValueError:
                 awareness_level_numeric = ""
                 awareness_level_color = ""
+            
+            # Get resource URL for unified schema
+            resource_url = ""
+            resources = props.get("resources", [])
+            if resources and len(resources) > 0:
+                resource_url = resources[0].get("uri", "")
+            
+            # Parse numeric severity level
+            severity_level = int(awareness_level_numeric) if awareness_level_numeric else 1
+            
             alerts.append({
+                # ===== EXISTING FIELDS (backward compatibility) =====
                 "title": title,
                 "starttime": starttime,
                 "endtime": endtime,
@@ -125,10 +136,22 @@ class MetAlertsArraySensor(CoordinatorEntity, SensorEntity):
                 "severity": props.get("severity", ""),
                 "instruction": props.get("instruction", ""),
                 "contact": props.get("contact", ""),
-                "resources": props.get("resources", []),
+                "resources": resources,
                 "area": props.get("area", ""),
                 "event_awareness_name": props.get("eventAwarenessName", ""),
                 "consequences": props.get("consequences", ""),
+                
+                # ===== UNIFIED SCHEMA FIELDS (for cross-integration compatibility) =====
+                "source": "met_alerts",                           # Integration identifier
+                "alert_category": "weather",                      # Category: weather/geohazard
+                "alert_type": props.get("event", ""),            # Alert type: gale, rain, snow, etc.
+                "severity_level": severity_level,                 # Numeric level 1-3 (Yellow=1, Orange=2, Red=3)
+                "severity_color": awareness_level_color,          # Color: yellow, orange, red
+                "severity_name": props.get("severity", ""),      # Name: Moderate, Severe, Extreme
+                "valid_from": starttime,                          # ISO8601 start time (alias for starttime)
+                "valid_to": endtime,                              # ISO8601 end time (alias for endtime)
+                "areas": [props.get("area", "")] if props.get("area") else [],  # Array of affected areas
+                "url": resource_url,                              # Link to detailed information
             })
         return {"alerts": alerts}
 

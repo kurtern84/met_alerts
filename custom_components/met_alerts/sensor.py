@@ -29,6 +29,7 @@ from .const import (
     CONF_SENSOR_MODE,
     SENSOR_MODE_LEGACY,
     SENSOR_MODE_ARRAY,
+    CONF_TEST_MODE,
     ICON_DATA_URLS,
     ICON_ATTRIBUTION,
 )
@@ -59,8 +60,9 @@ async def async_setup_entry(
     lang = entry.data.get(CONF_LANG, DEFAULT_LANG)
     # Read sensor mode from options, fallback to legacy
     sensor_mode = entry.options.get(CONF_SENSOR_MODE, SENSOR_MODE_LEGACY) if hasattr(entry, 'options') else SENSOR_MODE_LEGACY
+    test_mode = entry.options.get(CONF_TEST_MODE, False) if hasattr(entry, 'options') else False
 
-    coordinator = MetAlertsCoordinator(hass, latitude, longitude, lang)
+    coordinator = MetAlertsCoordinator(hass, latitude, longitude, lang, test_mode)
     await coordinator.async_config_entry_first_refresh()
 
     entities = []
@@ -186,7 +188,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class MetAlertsCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Met Alerts data."""
 
-    def __init__(self, hass, latitude, longitude, lang):
+    def __init__(self, hass, latitude, longitude, lang, test_mode=False):
         """Initialize coordinator."""
         super().__init__(
             hass,
@@ -197,6 +199,7 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
         self.latitude = latitude
         self.longitude = longitude
         self.lang = lang
+        self.test_mode = test_mode
 
     async def _async_update_data(self):
         """Fetch data from API."""
@@ -224,6 +227,101 @@ class MetAlertsCoordinator(DataUpdateCoordinator):
                             json_data = await response.json()
                             _LOGGER.info("Successfully fetched Met alerts data")
                             _LOGGER.debug("Full API response: %s", json_data)
+                            
+                            # Inject test alerts if test mode is enabled
+                            if self.test_mode:
+                                test_features = [
+                                    {
+                                        "type": "Feature",
+                                        "geometry": {
+                                            "type": "Polygon",
+                                            "coordinates": [[
+                                                [5.5, 59.0], [5.5, 60.0], [7.0, 60.0], [7.0, 59.0], [5.5, 59.0]
+                                            ]]
+                                        },
+                                        "when": {
+                                            "interval": ["2025-12-16T00:00:00+00:00", "2025-12-17T23:59:59+00:00"]
+                                        },
+                                        "properties": {
+                                            "area": "Testville",
+                                            "awarenessResponse": "Monitor",
+                                            "awareness_level": "2; orange; Moderate",
+                                            "awareness_level_numeric": 2,
+                                            "awareness_level_color": "#FF9D00",
+                                            "awareness_type": "1; Wind",
+                                            "ceiling": None,
+                                            "certainty": "Likely",
+                                            "consequences": "Danger to life and property. Moderate damages to infrastructure. Travelling may be impossible.",
+                                            "contact": "https://www.met.no/en",
+                                            "county": ["Vestland"],
+                                            "description": "Strong gale or storm from southwest, Thursday afternoon and evening. Exposed coastal areas in Testville may experience wind gusts up to 35 m/s.",
+                                            "event": "gale",
+                                            "eventAwarenessName": "moderate-wind",
+                                            "eventEndingTime": "2025-12-17T23:59:59+00:00",
+                                            "geographicDomain": "land",
+                                            "id": "2.49.0.1.578.0.20251216120000000.1",
+                                            "instruction": "Stay indoors. Secure loose objects. Avoid unnecessary travel.",
+                                            "resources": [
+                                                {"mimeType": "text/html", "uri": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"}
+                                            ],
+                                            "riskMatrixColor": "Orange",
+                                            "severity": "Moderate",
+                                            "title": "Orange wind warning for Testville",
+                                            "triggerLevel": None,
+                                            "type": "Alert",
+                                            "web": "https://www.met.no/"
+                                        }
+                                    },
+                                    {
+                                        "type": "Feature",
+                                        "geometry": {
+                                            "type": "Polygon",
+                                            "coordinates": [[
+                                                [5.5, 59.0], [5.5, 60.0], [7.0, 60.0], [7.0, 59.0], [5.5, 59.0]
+                                            ]]
+                                        },
+                                        "when": {
+                                            "interval": ["2025-12-17T12:00:00+00:00", "2025-12-18T06:00:00+00:00"]
+                                        },
+                                        "properties": {
+                                            "area": "Testville",
+                                            "awarenessResponse": "Monitor",
+                                            "awareness_level": "3; red; Severe",
+                                            "awareness_level_numeric": 3,
+                                            "awareness_level_color": "#C60000",
+                                            "awareness_type": "6; Rain",
+                                            "ceiling": None,
+                                            "certainty": "Likely",
+                                            "consequences": "Danger to life and property. Extensive flooding expected. Roads may be closed. Power outages likely.",
+                                            "contact": "https://www.met.no/en",
+                                            "county": ["Vestland"],
+                                            "description": "Extreme rainfall expected in Testville region Friday afternoon and night. 150-200mm of rain in 24 hours. Rivers may overflow.",
+                                            "event": "rain",
+                                            "eventAwarenessName": "extreme-rain",
+                                            "eventEndingTime": "2025-12-18T06:00:00+00:00",
+                                            "geographicDomain": "land",
+                                            "id": "2.49.0.1.578.0.20251216120000000.2",
+                                            "instruction": "Do not travel unless essential. Stay away from rivers and streams. Follow local authority instructions.",
+                                            "resources": [
+                                                {"mimeType": "text/html", "uri": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"}
+                                            ],
+                                            "riskMatrixColor": "Red",
+                                            "severity": "Severe",
+                                            "title": "Red rain warning for Testville",
+                                            "triggerLevel": None,
+                                            "type": "Alert",
+                                            "web": "https://www.met.no/"
+                                        }
+                                    }
+                                ]
+                                
+                                # Initialize features if not present
+                                if "features" not in json_data:
+                                    json_data["features"] = []
+                                
+                                # Add test features
+                                json_data["features"].extend(test_features)
+                                _LOGGER.info("Test mode: Injected 2 fake alerts for Testville (Orange Wind + Red Rain)")
                             
                             # Log the number of features found
                             features = json_data.get("features", [])

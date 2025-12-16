@@ -7,6 +7,7 @@
 CONF_SENSOR_MODE = "sensor_mode"
 SENSOR_MODE_LEGACY = "legacy"
 SENSOR_MODE_ARRAY = "array"
+CONF_TEST_MODE = "test_mode"
 
 ICON_ATTRIBUTION = (
 	"Warning icons by NRK/yr.no, CC BY 4.0, "

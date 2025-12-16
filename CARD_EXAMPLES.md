@@ -738,121 +738,97 @@ The `entity_picture` attribute contains a base64-encoded SVG data URL that works
 
 ## 🗺️ Displaying Alert Maps
 
-Met.no provides **direct PNG map images** in the alert data that can be displayed inline. These pre-generated maps show the affected area and are much better than just clickable links!
+Met.no provides pre-generated PNG map images for most alerts. The `map_url` attribute contains direct links to these images (e.g., `https://slaps.met.no/cap-images/[uuid].png`).
 
-### Option 1: Picture Card with Alert Map (Recommended)
+**No need for separate image template sensors!** Display maps inline using markdown cards.
 
-Displays the alert map image directly:
-
+### Simple: Map Only (Array Mode)
 ```yaml
-type: conditional
-conditions:
-  - entity: sensor.met_alerts
-    state_not: "No Alert"
-card:
-  type: picture
-  image: |
-    {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-    {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
-  tap_action:
-    action: url
-    url_path: |
-      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-      {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+type: markdown
+content: >
+  ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
 ```
 
-### Option 2: Vertical Stack with Alert Details + Inline Map
-
-Combined alert information and map visualization:
-
+### With Alert Details (Tested - Working ✓)
 ```yaml
 type: vertical-stack
 cards:
-  - type: conditional
-    conditions:
-      - entity: sensor.met_alerts
-        state_not: "No Alert"
-    card:
-      type: markdown
-      content: |
-        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-        {% if alerts | count > 0 %}
-        {% set alert = alerts[0] %}
-        ### {{ alert.title }}
-        
-        **{{ alert.awareness_level_color | upper }} Alert**
-        
-        **Description:**
-        {{ alert.description }}
-        
-        {% if alert.instruction %}
-        **What to do:**
-        {{ alert.instruction }}
-        {% endif %}
-        
-        **Valid:** {{ alert.starttime }} to {{ alert.endtime }}
-        **Area:** {{ alert.area }}
-        {% endif %}
-  
-  - type: conditional
-    conditions:
-      - entity: sensor.met_alerts
-        state_not: "No Alert"
-    card:
-      type: picture
-      image: |
-        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-        {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
-      tap_action:
-        action: url
-        url_path: |
-          {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-          {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+  - type: entities
+    entities:
+      - sensor.met_alerts_quick_test
+  - type: markdown
+    content: >
+      ![Alert Map]({{ state_attr('sensor.met_alerts_quick_test', 'alerts')[0].map_url }})
 ```
 
-### Option 3: Mushroom Template Card with Map Below (Your Style)
-
-Adapted from your example, using array mode with inline map:
-
+### Full Text Description + Map
 ```yaml
 type: vertical-stack
 cards:
-  - type: custom:mushroom-template-card
-    primary: |
-      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-      {% if alerts %}{{ alerts[0].title }}{% else %}No Weather Alerts{% endif %}
-    secondary: |
-      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-      {% if alerts %}
-      {{ alerts[0].description }}
+  - type: markdown
+    content: |
+      ## {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].event_awareness_name }}
       
-      {{ alerts[0].instruction }}
+      **{{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].headline }}**
+      
+      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].description }}
+      
+      {% if state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].instruction %}
+      **What to do:**
+      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].instruction }}
       {% endif %}
-    icon: mdi:alert
-    icon_color: |
-      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-      {% if alerts %}{{ alerts[0].awareness_level_color }}{% else %}grey{% endif %}
-    multiline_secondary: true
-    tap_action:
-      action: url
-      url_path: |
-        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-        {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% else %}https://www.met.no{% endif %}
+      
+      **Severity:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].severity }}  
+      **Effective:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].effective | as_timestamp | timestamp_custom('%d.%m.%Y %H:%M') }}  
+      **Expires:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].expires | as_timestamp | timestamp_custom('%d.%m.%Y %H:%M') }}
+  - type: markdown
+    content: >
+      ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
+```
+
+### All Alerts with Text and Maps
+```yaml
+type: markdown
+content: |
+  {% set alerts = state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts') or [] %}
+  {% for alert in alerts %}
+  ## {{ alert.event_awareness_name }}
   
-  - type: conditional
-    conditions:
-      - entity: sensor.met_alerts
-        state_not: "No Alert"
-    card:
-      type: picture
-      image: |
-        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-        {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
-      tap_action:
-        action: url
-        url_path: |
-          {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
-          {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+  **{{ alert.headline }}**
+  
+  {{ alert.description }}
+  
+  {% if alert.instruction %}
+  **What to do:** {{ alert.instruction }}
+  {% endif %}
+  
+  {% if alert.map_url %}
+  ![{{ alert.event_awareness_name }} Map]({{ alert.map_url }})
+  {% endif %}
+  
+  **Valid:** {{ alert.effective | as_timestamp | timestamp_custom('%d.%m %H:%M') }} - {{ alert.expires | as_timestamp | timestamp_custom('%d.%m %H:%M') }}  
+  **Severity:** {{ alert.severity }} | **Certainty:** {{ alert.certainty }}
+  
+  ---
+  {% endfor %}
+```
+
+### Compact: Side-by-Side Grid
+```yaml
+type: grid
+square: false
+columns: 2
+cards:
+  - type: markdown
+    content: |
+      ## {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].event_awareness_name }}
+      
+      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].description }}
+      
+      **Severity:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].severity }}
+  - type: markdown
+    content: >
+      ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
 ```
 
 ### Option 4: Grid Layout - Icon + Text + Map

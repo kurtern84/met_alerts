@@ -401,6 +401,260 @@ automation:
 
 ---
 
+## 📋 Ready-to-Use Template Library
+
+This section provides **copy-paste ready templates** for common use cases. Just copy the entire code block and paste into your dashboard!
+
+### Template 1: Compact Single-Line Status
+
+**Perfect for:** Glance cards, header status
+**What it shows:** Just the count and highest severity
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}⚠️ {{ alerts | count }} active alert(s) - Highest: {{ alerts | sort(attribute='awareness_level_numeric', reverse=True) | map(attribute='awareness_level_color') | first | upper }}{% else %}✅ No active weather alerts{% endif %}
+```
+
+**Output example:** `⚠️ 2 active alert(s) - Highest: ORANGE`
+
+---
+
+### Template 2: Simple Bulleted List
+
+**Perfect for:** Quick overview, mobile dashboards
+**What it shows:** Title and timeframe for each alert
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+**Active Weather Alerts ({{ alerts | count }})**
+{% for alert in alerts %}
+• **{{ alert.title }}**
+  Valid: {{ alert.starttime }} to {{ alert.endtime }}
+{% endfor %}
+{% else %}
+No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 3: Color-Coded Severity Badges
+
+**Perfect for:** Visual dashboards, at-a-glance severity
+**What it shows:** Alerts with colored severity indicators
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+{% for alert in alerts %}
+<div style="padding: 8px; margin: 4px 0; border-left: 4px solid {{ alert.awareness_level_color }}; background: rgba({% if alert.awareness_level_numeric == 3 %}198,0,0{% elif alert.awareness_level_numeric == 2 %}255,157,0{% else %}255,230,0{% endif %}, 0.1);">
+<b>{{ alert.title }}</b><br>
+<small>{{ alert.event_awareness_name | upper }} • {{ alert.awareness_level_color | upper }}</small>
+</div>
+{% endfor %}
+{% else %}
+✅ No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 4: Detailed Alert Cards
+
+**Perfect for:** Full information display, desktop dashboards
+**What it shows:** Complete alert details with instructions
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+{% for alert in alerts %}
+---
+### 🚨 {{ alert.title }}
+
+**Type:** {{ alert.event_awareness_name | title }}
+**Severity:** {{ alert.awareness_level_color | upper }} ({{ alert.certainty }})
+**Active:** {{ alert.starttime }} → {{ alert.endtime }}
+**Area:** {{ alert.area }}
+
+**Description:**
+{{ alert.description }}
+
+{% if alert.instruction %}
+**What to do:**
+{{ alert.instruction }}
+{% endif %}
+
+{% if alert.consequences %}
+**Potential consequences:**
+{{ alert.consequences }}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 5: Red Alerts Only (Critical)
+
+**Perfect for:** Emergency displays, high-priority notifications
+**What it shows:** Only red/extreme alerts
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% set red_alerts = alerts | selectattr('awareness_level_numeric', 'eq', 3) | list %}
+{% if red_alerts | count > 0 %}
+🚨 **EXTREME WEATHER WARNING** 🚨
+{% for alert in red_alerts %}
+### {{ alert.title }}
+{{ alert.description }}
+
+⚠️ **ACTION REQUIRED:** {{ alert.instruction }}
+
+Valid: {{ alert.starttime }} to {{ alert.endtime }}
+{% endfor %}
+{% else %}
+No extreme weather warnings
+{% endif %}
+```
+
+---
+
+### Template 6: Timeline View with Countdown
+
+**Perfect for:** Showing when alerts become active/expire
+**What it shows:** Time until alert starts/ends
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+**Weather Alert Timeline**
+{% for alert in alerts | sort(attribute='starttime') %}
+{% set start = as_timestamp(alert.starttime) %}
+{% set end = as_timestamp(alert.endtime) %}
+{% set now = as_timestamp(now()) %}
+
+• **{{ alert.title }}**
+  {% if start > now %}
+  ⏰ Starts in {{ ((start - now) / 3600) | round(1) }} hours
+  {% elif end > now %}
+  🔴 ACTIVE - Ends in {{ ((end - now) / 3600) | round(1) }} hours
+  {% else %}
+  ✅ Expired
+  {% endif %}
+{% endfor %}
+{% else %}
+No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 7: Grouped by Severity
+
+**Perfect for:** Organized display, priority sorting
+**What it shows:** Alerts grouped into Red/Orange/Yellow sections
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% set red = alerts | selectattr('awareness_level_numeric', 'eq', 3) | list %}
+{% set orange = alerts | selectattr('awareness_level_numeric', 'eq', 2) | list %}
+{% set yellow = alerts | selectattr('awareness_level_numeric', 'eq', 1) | list %}
+
+{% if red | count > 0 %}
+### 🔴 EXTREME WEATHER ({{ red | count }})
+{% for alert in red %}
+• **{{ alert.title }}** - {{ alert.event_awareness_name }}
+{% endfor %}
+{% endif %}
+
+{% if orange | count > 0 %}
+### 🟠 SEVERE WEATHER ({{ orange | count }})
+{% for alert in orange %}
+• **{{ alert.title }}** - {{ alert.event_awareness_name }}
+{% endfor %}
+{% endif %}
+
+{% if yellow | count > 0 %}
+### 🟡 MODERATE WEATHER ({{ yellow | count }})
+{% for alert in yellow %}
+• **{{ alert.title }}** - {{ alert.event_awareness_name }}
+{% endfor %}
+{% endif %}
+
+{% if (red + orange + yellow) | count == 0 %}
+✅ No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 8: Mobile-Optimized Summary
+
+**Perfect for:** Phone/tablet dashboards, quick glance
+**What it shows:** Compact icons and minimal text
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+{% for alert in alerts | sort(attribute='awareness_level_numeric', reverse=True) %}
+{% set icon = '🔴' if alert.awareness_level_numeric == 3 else '🟠' if alert.awareness_level_numeric == 2 else '🟡' %}
+{{ icon }} **{{ alert.event_awareness_name | title }}** in {{ alert.area }}
+<small>Until {{ alert.endtime.split('T')[0] }}</small>
+{% endfor %}
+{% else %}
+✅ All Clear
+{% endif %}
+```
+
+---
+
+### Template 9: Map Link Generator
+
+**Perfect for:** Quick access to detailed alert maps
+**What it shows:** Clickable links to Met.no maps
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+**View Detailed Alert Maps:**
+{% for alert in alerts %}
+• [{{ alert.title }}]({{ alert.resources[0].uri if alert.resources else 'https://www.met.no' }})
+{% endfor %}
+{% else %}
+No active weather alerts
+{% endif %}
+```
+
+---
+
+### Template 10: Conditional Display (Show Only When Alerts Active)
+
+**Perfect for:** Clean dashboards that only show alerts when needed
+**What it shows:** Entire card hidden when no alerts
+
+```jinja2
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts | count > 0 %}
+# ⚠️ Active Weather Alerts
+
+{% for alert in alerts %}
+**{{ alert.title }}**
+{{ alert.description }}
+
+Valid until: {{ alert.endtime }}
+{% if not loop.last %}---{% endif %}
+{% endfor %}
+{% endif %}
+```
+
+**Note:** Use with a conditional card to completely hide when `alerts | count == 0`
+
+---
+
 ## Tips & Tricks
 
 ### Working with Alert Arrays

@@ -742,48 +742,172 @@ Met.no provides pre-generated PNG map images for most alerts. The `map_url` attr
 
 **No need for separate image template sensors!** Display maps inline using markdown cards.
 
-### Simple: Map Only (Array Mode)
+**Modern Approach:** Use the new Sections view for responsive, flexible layouts without card_mod dependencies.
+
+### Simple: Map Only
 ```yaml
 type: markdown
 content: >
-  ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
+  {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+  {% if alert.map_url %}
+  <img src="{{ alert.map_url }}" width="600" alt="Alert Map">
+  {% endif %}
 ```
 
-### With Alert Details (Tested - Working ✓)
+**Or in Sections View:**
+
 ```yaml
-type: vertical-stack
-cards:
-  - type: entities
-    entities:
-      - sensor.met_alerts_quick_test
-  - type: markdown
-    content: >
-      ![Alert Map]({{ state_attr('sensor.met_alerts_quick_test', 'alerts')[0].map_url }})
+type: sections
+max_columns: 1
+title: Alert Map
+sections:
+  - type: grid
+    cards:
+      - type: markdown
+        content: >
+          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          {% if alert.map_url %}
+          ![Alert Map]({{ alert.map_url }})
+          {% endif %}
+        grid_options:
+          columns: full
+          rows: auto
+    column_span: 1
 ```
 
-### Full Text Description + Map
+### With Alert Details (Sections View - Modern ✓)
 ```yaml
-type: vertical-stack
-cards:
-  - type: markdown
-    content: |
-      ## {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].event_awareness_name }}
-      
-      **{{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].headline }}**
-      
-      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].description }}
-      
-      {% if state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].instruction %}
-      **What to do:**
-      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].instruction }}
-      {% endif %}
-      
-      **Severity:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].severity }}  
-      **Effective:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].effective | as_timestamp | timestamp_custom('%d.%m.%Y %H:%M') }}  
-      **Expires:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].expires | as_timestamp | timestamp_custom('%d.%m.%Y %H:%M') }}
-  - type: markdown
-    content: >
-      ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
+type: sections
+max_columns: 4
+title: Weather Alerts
+sections:
+  - type: grid
+    cards:
+      - type: entities
+        entities:
+          - sensor.met_alerts_quick_test
+        grid_options:
+          columns: full
+          rows: auto
+      - type: markdown
+        content: >-
+          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') %}
+          
+          {% for alert in alerts %}
+          
+          ### {{ alert.title }}
+          
+          {{ alert.description }}
+          
+          {% if alert.map_url %}
+          <img src="{{ alert.map_url }}" width="600" alt="Alert Map">
+          {% endif %}
+          
+          ---
+          {% endfor %}
+        grid_options:
+          columns: 24
+          rows: auto
+    column_span: 4
+```
+
+### Full Alert Details with Map (Sections View - Recommended ✓)
+```yaml
+type: sections
+max_columns: 4
+title: Weather Alerts
+sections:
+  - type: grid
+    cards:
+      - type: entities
+        entities:
+          - sensor.met_alerts_quick_test
+        grid_options:
+          columns: full
+          rows: auto
+      - type: markdown
+        content: >-
+          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') %}
+          
+          {% for alert in alerts %}
+          
+          ### {{ alert.title }}
+          
+          **Severity**: {{ alert.awareness_level_color|upper }}
+          
+          **Type**: {{ alert.event_awareness_name }}
+          
+          **Valid Period**: {{ alert.starttime }} to {{ alert.endtime }}
+          
+          #### Description
+          {{ alert.description }}
+          
+          {% if alert.instruction %}
+          #### Instructions
+          {{ alert.instruction }}
+          {% endif %}
+          
+          {% if alert.consequences %}
+          #### Consequences
+          {{ alert.consequences }}
+          {% endif %}
+          
+          {% if alert.area %}
+          **Area**: {{ alert.area }}
+          {% endif %}
+          
+          **Certainty**: {{ alert.certainty }} | **Severity**: {{ alert.severity }}
+          
+          ---
+          
+          {% if alert.map_url %}
+          <img src="{{ alert.map_url }}" width="600" alt="Alert Map">
+          {% endif %}
+          
+          {% endfor %}
+        grid_options:
+          columns: 24
+          rows: auto
+    column_span: 4
+```
+
+### Multiple Alerts with Individual Maps (Sections View)
+```yaml
+type: sections
+max_columns: 2
+title: Active Weather Alerts
+sections:
+  - type: grid
+    cards:
+      - type: markdown
+        content: >-
+          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') or [] %}
+          
+          {% for alert in alerts %}
+          
+          ### {{ loop.index }}. {{ alert.event_awareness_name }}
+          
+          **{{ alert.title }}**
+          
+          {{ alert.description }}
+          
+          {% if alert.instruction %}
+          **What to do:** {{ alert.instruction }}
+          {% endif %}
+          
+          **Valid:** {{ alert.starttime }} to {{ alert.endtime }}  
+          **Severity:** {{ alert.severity }} | **Certainty:** {{ alert.certainty }}
+          
+          {% if alert.map_url %}
+          <img src="{{ alert.map_url }}" width="600" alt="{{ alert.event_awareness_name }} Map">
+          {% endif %}
+          
+          ---
+          {% endfor %}
+        grid_options:
+          columns: full
+          rows: auto
+    column_span: 2
 ```
 
 ### All Alerts with Text and Maps
@@ -794,29 +918,44 @@ content: |
   {% for alert in alerts %}
   ## {{ alert.event_awareness_name }}
   
-  **{{ alert.headline }}**
+  **{{ alert.title }}**
   
   {{ alert.description }}
   
   {% if alert.instruction %}
   **What to do:** {{ alert.instruction }}
   {% endif %}
-  
-  {% if alert.map_url %}
-  ![{{ alert.event_awareness_name }} Map]({{ alert.map_url }})
-  {% endif %}
-  
-  **Valid:** {{ alert.effective | as_timestamp | timestamp_custom('%d.%m %H:%M') }} - {{ alert.expires | as_timestamp | timestamp_custom('%d.%m %H:%M') }}  
-  **Severity:** {{ alert.severity }} | **Certainty:** {{ alert.certainty }}
-  
-  ---
-  {% endfor %}
-```
-
-### Compact: Side-by-Side Grid
+   Side-by-Side (Sections View - Two Column)
 ```yaml
-type: grid
-square: false
+type: sections
+max_columns: 2
+title: Weather Alert
+sections:
+  - type: grid
+    cards:
+      - type: markdown
+        content: |
+          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          
+          ## {{ alert.event_awareness_name }}
+          
+          {{ alert.description }}
+          
+          **Severity:** {{ alert.severity }} ({{ alert.awareness_level_color|upper }})  
+          **Valid:** {{ alert.starttime }} to {{ alert.endtime }}
+        grid_options:
+          columns: 12
+          rows: auto
+      - type: markdown
+        content: >
+          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          {% if alert.map_url %}
+          <img src="{{ alert.map_url }}" width="100%" alt="Alert Map">
+          {% endif %}
+        grid_options:
+          columns: 12
+          rows: auto
+    column_span: 2
 columns: 2
 cards:
   - type: markdown
@@ -828,7 +967,10 @@ cards:
       **Severity:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].severity }}
   - type: markdown
     content: >
-      ![Alert Map]({{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].map_url }})
+      {% set alert = state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0] %}
+      {% if alert.map_url %}
+      <img src="{{ alert.map_url }}" width="100%" alt="Alert Map">
+      {% endif %}
 ```
 
 ### Option 4: Grid Layout - Icon + Text + Map

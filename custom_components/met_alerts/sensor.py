@@ -120,6 +120,13 @@ class MetAlertsArraySensor(CoordinatorEntity, SensorEntity):
             if resources and len(resources) > 0:
                 resource_url = resources[0].get("uri", "")
             
+            # Extract PNG map URL (for inline image display)
+            map_url = None
+            for resource in resources:
+                if resource.get("mimeType") == "image/png":
+                    map_url = resource.get("uri")
+                    break
+            
             # Parse numeric severity level
             severity_level = int(awareness_level_numeric) if awareness_level_numeric else 1
             
@@ -140,6 +147,7 @@ class MetAlertsArraySensor(CoordinatorEntity, SensorEntity):
                 "area": props.get("area", ""),
                 "event_awareness_name": props.get("eventAwarenessName", ""),
                 "consequences": props.get("consequences", ""),
+                "map_url": map_url,
                 
                 # ===== UNIFIED SCHEMA FIELDS (for cross-integration compatibility) =====
                 "source": "met_alerts",                           # Integration identifier

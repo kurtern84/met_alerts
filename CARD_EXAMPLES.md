@@ -179,6 +179,10 @@ cards:
         {% endfor %}
 ```
 
+Example:
+
+![Dashboard Example](screenshots/dashboard-example.png)
+
 ### 6. Severity-Based Color Card
 
 Conditional card that only shows for higher severity alerts:
@@ -496,6 +500,7 @@ No active weather alerts
 {% endif %}
 ```
 
+
 ---
 
 ### Template 5: Red Alerts Only (Critical)
@@ -699,6 +704,7 @@ Each alert in the array has these attributes:
 - `area` - Affected area
 - `event_awareness_name` - Type of alert (wind, rain, etc.)
 - `consequences` - Potential consequences
+- `map_url` - Direct PNG image URL for inline map display (e.g., `https://slaps.met.no/cap-images/*.png`)
 
 ### Icon URLs
 
@@ -727,5 +733,231 @@ The `entity_picture` attribute contains a base64-encoded SVG data URL that works
 - Check the [README](README.md) for configuration options
 - See [FRONTEND_EXAMPLES.md](FRONTEND_EXAMPLES.md) for more display ideas
 - Report issues on GitHub
+
+---
+
+## 🗺️ Displaying Alert Maps
+
+Met.no provides **direct PNG map images** in the alert data that can be displayed inline. These pre-generated maps show the affected area and are much better than just clickable links!
+
+### Option 1: Picture Card with Alert Map (Recommended)
+
+Displays the alert map image directly:
+
+```yaml
+type: conditional
+conditions:
+  - entity: sensor.met_alerts
+    state_not: "No Alert"
+card:
+  type: picture
+  image: |
+    {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+    {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
+  tap_action:
+    action: url
+    url_path: |
+      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+      {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+```
+
+### Option 2: Vertical Stack with Alert Details + Inline Map
+
+Combined alert information and map visualization:
+
+```yaml
+type: vertical-stack
+cards:
+  - type: conditional
+    conditions:
+      - entity: sensor.met_alerts
+        state_not: "No Alert"
+    card:
+      type: markdown
+      content: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts | count > 0 %}
+        {% set alert = alerts[0] %}
+        ### {{ alert.title }}
+        
+        **{{ alert.awareness_level_color | upper }} Alert**
+        
+        **Description:**
+        {{ alert.description }}
+        
+        {% if alert.instruction %}
+        **What to do:**
+        {{ alert.instruction }}
+        {% endif %}
+        
+        **Valid:** {{ alert.starttime }} to {{ alert.endtime }}
+        **Area:** {{ alert.area }}
+        {% endif %}
+  
+  - type: conditional
+    conditions:
+      - entity: sensor.met_alerts
+        state_not: "No Alert"
+    card:
+      type: picture
+      image: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
+      tap_action:
+        action: url
+        url_path: |
+          {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+          {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+```
+
+### Option 3: Mushroom Template Card with Map Below (Your Style)
+
+Adapted from your example, using array mode with inline map:
+
+```yaml
+type: vertical-stack
+cards:
+  - type: custom:mushroom-template-card
+    primary: |
+      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+      {% if alerts %}{{ alerts[0].title }}{% else %}No Weather Alerts{% endif %}
+    secondary: |
+      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+      {% if alerts %}
+      {{ alerts[0].description }}
+      
+      {{ alerts[0].instruction }}
+      {% endif %}
+    icon: mdi:alert
+    icon_color: |
+      {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+      {% if alerts %}{{ alerts[0].awareness_level_color }}{% else %}grey{% endif %}
+    multiline_secondary: true
+    tap_action:
+      action: url
+      url_path: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% else %}https://www.met.no{% endif %}
+  
+  - type: conditional
+    conditions:
+      - entity: sensor.met_alerts
+        state_not: "No Alert"
+    card:
+      type: picture
+      image: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
+      tap_action:
+        action: url
+        url_path: |
+          {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+          {% if alerts and alerts[0].resources %}{{ alerts[0].resources[0].uri }}{% endif %}
+```
+
+### Option 4: Grid Layout - Icon + Text + Map
+
+Side-by-side layout for larger screens:
+
+```yaml
+type: conditional
+conditions:
+  - entity: sensor.met_alerts
+    state_not: "No Alert"
+card:
+  type: grid
+  columns: 2
+  cards:
+    - type: markdown
+      content: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts | count > 0 %}
+        {% set alert = alerts[0] %}
+        ### {{ alert.title }}
+        
+        **{{ alert.awareness_level_color | upper }}**
+        
+        {{ alert.description }}
+        
+        {% if alert.instruction %}
+        **Action:** {{ alert.instruction }}
+        {% endif %}
+        
+        Valid: {{ alert.starttime }} to {{ alert.endtime }}
+        {% endif %}
+    
+    - type: picture
+      image: |
+        {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+        {% if alerts and alerts[0].map_url %}{{ alerts[0].map_url }}{% else %}/local/placeholder.png{% endif %}
+```
+
+### Option 5: All Alerts with Individual Maps
+
+Shows multiple alerts, each with its own map:
+
+```yaml
+type: vertical-stack
+cards:
+  {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+  {% for alert in alerts %}
+  - type: markdown
+    content: |
+      ### {{ loop.index }}. {{ alert.title }}
+      **{{ alert.awareness_level_color | upper }}** | {{ alert.event_awareness_name }}
+      
+      {{ alert.description }}
+      
+      Valid: {{ alert.starttime }} to {{ alert.endtime }}
+  
+  - type: picture
+    image: "{{ alert.map_url if alert.map_url else '/local/placeholder.png' }}"
+    tap_action:
+      action: url
+      url_path: "{{ alert.resources[0].uri if alert.resources else 'https://www.met.no' }}"
+  {% endfor %}
+```
+
+**Note:** This uses advanced templating - may need to be split into separate cards manually.
+
+### Accessing Map Images in Templates
+
+```jinja2
+{# Get first alert's map image URL #}
+{% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
+{% if alerts and alerts[0].map_url %}
+  <img src="{{ alerts[0].map_url }}" alt="Alert Map">
+{% endif %}
+
+{# Check if map exists #}
+{% if alerts and alerts[0].map_url %}
+  Map available!
+{% endif %}
+
+{# Example map URL format #}
+https://slaps.met.no/cap-images/75726e44-9d68-4785-a3df-bd0714809351.png
+```
+
+### Key Differences from Legacy Mode
+
+| Legacy Mode | Array Mode |
+|-------------|------------|
+| `map_url` attribute on sensor | `map_url` in alerts array: `alerts[0].map_url` |
+| Separate sensors for each alert | All alerts in one sensor |
+| One image per sensor | One image per alert in array |
+
+### No More Image Template Sensors Needed! 🎉
+
+Unlike before, you can now access the map URL directly from the alert attributes without creating image template sensors. The `map_url` field contains the direct PNG URL from slaps.met.no.
+
+**Benefits:**
+- ✅ Direct PNG image URLs (e.g., `https://slaps.met.no/cap-images/*.png`)
+- ✅ No need for image template sensors
+- ✅ Pre-generated maps showing affected geographic areas
+- ✅ Works offline once cached by browser
+- ✅ Can be displayed inline in picture cards
+- ✅ Tap action can still link to interactive Met.no page
+
+---
 
 **Note**: Replace `sensor.met_alerts` with your actual entity ID if you customized the name during setup.

@@ -748,7 +748,7 @@ Met.no provides pre-generated PNG map images for most alerts. The `map_url` attr
 ```yaml
 type: markdown
 content: >
-  {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+  {% set alert = state_attr('sensor.met_alerts', 'alerts')[0] %}
   {% if alert.map_url %}
   <img src="{{ alert.map_url }}" width="600" alt="Alert Map">
   {% endif %}
@@ -765,7 +765,7 @@ sections:
     cards:
       - type: markdown
         content: >
-          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          {% set alert = state_attr('sensor.met_alerts', 'alerts')[0] %}
           {% if alert.map_url %}
           ![Alert Map]({{ alert.map_url }})
           {% endif %}
@@ -785,13 +785,13 @@ sections:
     cards:
       - type: entities
         entities:
-          - sensor.met_alerts_quick_test
+          - sensor.met_alerts
         grid_options:
           columns: full
           rows: auto
       - type: markdown
         content: >-
-          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') %}
+          {% set alerts = state_attr('sensor.met_alerts', 'alerts') %}
           
           {% for alert in alerts %}
           
@@ -821,13 +821,13 @@ sections:
     cards:
       - type: entities
         entities:
-          - sensor.met_alerts_quick_test
+          - sensor.met_alerts
         grid_options:
           columns: full
           rows: auto
       - type: markdown
         content: >-
-          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') %}
+          {% set alerts = state_attr('sensor.met_alerts', 'alerts') %}
           
           {% for alert in alerts %}
           
@@ -881,7 +881,7 @@ sections:
     cards:
       - type: markdown
         content: >-
-          {% set alerts = state_attr('sensor.met_alerts_quick_test', 'alerts') or [] %}
+          {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
           
           {% for alert in alerts %}
           
@@ -914,7 +914,7 @@ sections:
 ```yaml
 type: markdown
 content: |
-  {% set alerts = state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts') or [] %}
+  {% set alerts = state_attr('sensor.met_alerts', 'alerts') or [] %}
   {% for alert in alerts %}
   ## {{ alert.event_awareness_name }}
   
@@ -935,7 +935,7 @@ sections:
     cards:
       - type: markdown
         content: |
-          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          {% set alert = state_attr('sensor.met_alerts', 'alerts')[0] %}
           
           ## {{ alert.event_awareness_name }}
           
@@ -948,7 +948,7 @@ sections:
           rows: auto
       - type: markdown
         content: >
-          {% set alert = state_attr('sensor.met_alerts_quick_test', 'alerts')[0] %}
+          {% set alert = state_attr('sensor.met_alerts', 'alerts')[0] %}
           {% if alert.map_url %}
           <img src="{{ alert.map_url }}" width="100%" alt="Alert Map">
           {% endif %}
@@ -960,14 +960,14 @@ columns: 2
 cards:
   - type: markdown
     content: |
-      ## {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].event_awareness_name }}
+      ## {{ state_attr('sensor.met_alerts', 'alerts')[0].event_awareness_name }}
       
-      {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].description }}
+      {{ state_attr('sensor.met_alerts', 'alerts')[0].description }}
       
-      **Severity:** {{ state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0].severity }}
+      **Severity:** {{ state_attr('sensor.met_alerts', 'alerts')[0].severity }}
   - type: markdown
     content: >
-      {% set alert = state_attr('sensor.met_alerts_nord_norge_nordland_array', 'alerts')[0] %}
+      {% set alert = state_attr('sensor.met_alerts', 'alerts')[0] %}
       {% if alert.map_url %}
       <img src="{{ alert.map_url }}" width="100%" alt="Alert Map">
       {% endif %}

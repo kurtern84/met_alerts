@@ -31,19 +31,30 @@ This release represents a significant upgrade to the Met Alerts integration with
   - Enable via integration options UI
   - See [TEST_MODE.md](TEST_MODE.md) for usage guide
 
+- **Map URL Extraction** - Direct links to alert map images
+  - `map_url` attribute contains direct PNG image URLs from slaps.met.no
+  - Pre-generated maps showing affected geographic areas
+  - No need for image template sensors
+  - Works with picture cards and markdown cards
+  - See [CARD_EXAMPLES.md](CARD_EXAMPLES.md) for display examples
+
 - **Dashboard Examples** - Comprehensive card templates
   - 10+ ready-to-use copy-paste examples in [CARD_EXAMPLES.md](CARD_EXAMPLES.md)
   - Compact status, timeline views, color-coded badges, and more
-  - Mobile-optimized layouts
+  - Mobile-optimized layouts with Sections view (modern HA approach)
   - Conditional visibility based on alert severity
+  - Map display examples with conditional checks
+  - HTML img tags with width attributes for future HA frontend support
 
 - **Official Yr.no Warning Icons** - Embedded SVG icons
   - Automatic icon display based on alert type and severity
   - 48x48px canvas with 8px padding for consistency
   - Base64-encoded, no external dependencies
   - Licensed under CC BY 4.0 from Yr/NRK
-  - Icons for: gale, rain, snow, ice, wind, thunderstorm, fog, heat, cold
+  - Complete coverage: avalanches, flood, forestfire, ice, lightning, rain, snow, wind, gale
   - All three severity levels: yellow (moderate), orange (severe), red (extreme)
+  - Gale events mapped to wind icons (Met.no API equivalence)
+  - Convert script included for updating icons from yr-warning-icons source
 
 ### 🔧 Changed
 

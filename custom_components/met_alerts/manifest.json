@@ -1,7 +1,7 @@
 {
   "domain": "met_alerts",
   "name": "Met Alerts",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "documentation": "https://github.com/kurtern84/met_alerts",
   "requirements": ["aiohttp"],
   "dependencies": [],

@@ -10,7 +10,16 @@ from homeassistant.const import CONF_NAME, CONF_LATITUDE, CONF_LONGITUDE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, DEFAULT_NAME, DEFAULT_LANG, CONF_LANG
+from .const import (
+    DOMAIN,
+    DEFAULT_NAME,
+    DEFAULT_LANG,
+    CONF_LANG,
+    CONF_SENSOR_MODE,
+    SENSOR_MODE_LEGACY,
+    SENSOR_MODE_ARRAY,
+    CONF_TEST_MODE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,9 +73,23 @@ class MetAlertsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 self._abort_if_unique_id_configured()
 
+                # Split config data and options data
+                config_data = {
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_LATITUDE: user_input[CONF_LATITUDE],
+                    CONF_LONGITUDE: user_input[CONF_LONGITUDE],
+                    CONF_LANG: user_input.get(CONF_LANG, DEFAULT_LANG),
+                }
+                options_data = {}
+                if CONF_SENSOR_MODE in user_input:
+                    options_data[CONF_SENSOR_MODE] = user_input[CONF_SENSOR_MODE]
+                if CONF_TEST_MODE in user_input:
+                    options_data[CONF_TEST_MODE] = user_input[CONF_TEST_MODE]
+
                 return self.async_create_entry(
                     title=user_input.get(CONF_NAME, DEFAULT_NAME),
-                    data=user_input,
+                    data=config_data,
+                    options=options_data,
                 )
             except ValueError as err:
                 _LOGGER.error("Validation failed: %s", err)
@@ -88,6 +111,8 @@ class MetAlertsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default=self.hass.config.longitude,
                 ): cv.longitude,
                 vol.Optional(CONF_LANG, default=DEFAULT_LANG): vol.In(["no", "en"]),
+                vol.Optional(CONF_SENSOR_MODE, default=SENSOR_MODE_LEGACY): vol.In([SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY]),
+                vol.Optional(CONF_TEST_MODE, default=False): cv.boolean,
             }
         )
 
@@ -121,7 +146,23 @@ class MetAlertsOptionsFlow(config_entries.OptionsFlow):
                     user_input.get(CONF_LANG, DEFAULT_LANG),
                 )
 
-                return self.async_create_entry(title="", data=user_input)
+                # Update config entry data
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data={
+                        CONF_NAME: user_input[CONF_NAME],
+                        CONF_LATITUDE: user_input[CONF_LATITUDE],
+                        CONF_LONGITUDE: user_input[CONF_LONGITUDE],
+                        CONF_LANG: user_input.get(CONF_LANG, DEFAULT_LANG),
+                    },
+                )
+                # Return options data (sensor_mode and test_mode)
+                options_data = {}
+                if CONF_SENSOR_MODE in user_input:
+                    options_data[CONF_SENSOR_MODE] = user_input[CONF_SENSOR_MODE]
+                if CONF_TEST_MODE in user_input:
+                    options_data[CONF_TEST_MODE] = user_input[CONF_TEST_MODE]
+                return self.async_create_entry(title="", data=options_data)
             except ValueError as err:
                 _LOGGER.error("Validation failed: %s", err)
                 errors["base"] = "cannot_connect"
@@ -129,11 +170,15 @@ class MetAlertsOptionsFlow(config_entries.OptionsFlow):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
-        # Get current values from config entry
+        # Get current values from config entry and options
         current_name = self.config_entry.data.get(CONF_NAME, DEFAULT_NAME)
         current_lat = self.config_entry.data.get(CONF_LATITUDE, self.hass.config.latitude)
         current_lon = self.config_entry.data.get(CONF_LONGITUDE, self.hass.config.longitude)
         current_lang = self.config_entry.data.get(CONF_LANG, DEFAULT_LANG)
+        current_mode = self.config_entry.options.get(CONF_SENSOR_MODE, SENSOR_MODE_LEGACY)
+        current_test_mode = self.config_entry.options.get(
+            CONF_TEST_MODE, self.config_entry.data.get(CONF_TEST_MODE, False)
+        )
 
         data_schema = vol.Schema(
             {
@@ -141,6 +186,8 @@ class MetAlertsOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_LATITUDE, default=current_lat): cv.latitude,
                 vol.Required(CONF_LONGITUDE, default=current_lon): cv.longitude,
                 vol.Optional(CONF_LANG, default=current_lang): vol.In(["no", "en"]),
+                vol.Optional(CONF_SENSOR_MODE, default=current_mode): vol.In([SENSOR_MODE_LEGACY, SENSOR_MODE_ARRAY]),
+                vol.Optional(CONF_TEST_MODE, default=current_test_mode): cv.boolean,
             }
         )
 
